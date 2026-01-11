@@ -1,5 +1,15 @@
 # CLAUDE.md
 
+## TODO: Rename Package
+
+> **This is the official Lumea Next.js template.** After cloning, rename the package in `package.json` from `"nextjs"` to your project name and remove this section.
+>
+> ```bash
+> # Example: rename to "my-awesome-app"
+> # 1. Edit package.json: "name": "my-awesome-app"
+> # 2. Delete this TODO section from CLAUDE.md
+> ```
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Development Commands
