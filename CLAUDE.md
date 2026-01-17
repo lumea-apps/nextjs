@@ -19,6 +19,14 @@ bun dev          # Start development server (localhost:3000)
 bun build        # Production build
 bun start        # Start production server
 bun lint         # Run ESLint
+
+# Database commands
+bun run db:generate  # Generate migrations from schema changes
+bun run db:migrate   # Apply pending migrations
+bun run db:push      # Push schema directly (dev only)
+bun run db:studio    # Launch Drizzle Studio (GUI)
+bun run db:seed      # Run seed script
+bun run db:setup     # Run migrations + seed (full setup)
 ```
 
 ## Architecture
@@ -32,15 +40,22 @@ This is a Next.js 16 scaffold with App Router, React 19, and a complete shadcn/u
 - **shadcn/ui** (new-york style) with Radix UI primitives
 - **lucide-react** for icons
 - **Bun** as package manager
+- **PostgreSQL 17** with Drizzle ORM (local sandbox + Neon production)
+- **Better-Auth** for authentication (email/password + OAuth)
 
 ### Path Aliases
 Use `@/*` for imports from project root (configured in tsconfig.json).
 
 ### Key Directories
 - `app/` - Next.js App Router pages and layouts
+- `app/api/auth/[...all]/` - Better-Auth API route
 - `components/ui/` - shadcn/ui components (50+ pre-installed)
+- `lib/db/` - Database client and schema (Drizzle ORM)
+- `lib/auth/` - Authentication configuration (Better-Auth)
 - `lib/utils.ts` - `cn()` utility for class merging (clsx + tailwind-merge)
 - `hooks/` - Custom React hooks (includes `use-mobile.ts`)
+- `drizzle/` - Database migrations
+- `scripts/` - Utility scripts (seed.ts)
 
 ### Styling
 - CSS variables defined in `app/globals.css` using OKLCH color space
@@ -59,6 +74,123 @@ Use `@/*` for imports from project root (configured in tsconfig.json).
 - `date-fns` + `react-day-picker` for dates
 - `embla-carousel-react` for carousels
 - `react-resizable-panels` for resizable layouts
+
+---
+
+## Database & Authentication
+
+This scaffold includes a full-stack database setup with PostgreSQL and authentication via Better-Auth.
+
+### Database Architecture
+
+**Local Development (Sandbox):**
+- PostgreSQL 17 runs locally via supervisord
+- Connection: `postgresql://lumea@localhost:5432/lumea`
+- `DATABASE_URL` is set automatically by supervisord
+
+**Production (Neon):**
+- Serverless PostgreSQL via Neon
+- Set `DATABASE_URL` in environment variables
+- Same schema, identical behavior
+
+### Database Schema
+
+Schema is defined in `lib/db/schema.ts`:
+
+```typescript
+import { db } from "@/lib/db";
+import { users, posts } from "@/lib/db/schema";
+
+// Query all users
+const allUsers = await db.select().from(users);
+
+// Insert a post
+const [post] = await db
+  .insert(posts)
+  .values({ title: "Hello", authorId: userId })
+  .returning();
+```
+
+### Adding Tables
+
+1. Edit `lib/db/schema.ts`:
+```typescript
+export const products = pgTable("products", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  price: integer("price").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+```
+
+2. Generate migration:
+```bash
+bun run db:generate
+```
+
+3. Apply migration:
+```bash
+bun run db:migrate
+```
+
+### Authentication (Better-Auth)
+
+Authentication is pre-configured with email/password support.
+
+**Server-side (API routes, Server Components):**
+```typescript
+import { auth } from "@/lib/auth";
+
+// In API route
+export async function GET(request: Request) {
+  const session = await auth.api.getSession({
+    headers: request.headers,
+  });
+
+  if (!session) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  return Response.json({ user: session.user });
+}
+```
+
+**Client-side (React components):**
+```typescript
+"use client";
+import { useSession, signIn, signOut } from "@/lib/auth/client";
+
+function LoginButton() {
+  const { data: session } = useSession();
+
+  if (session) {
+    return <button onClick={() => signOut()}>Sign Out</button>;
+  }
+
+  return (
+    <button onClick={() => signIn.email({
+      email: "user@example.com",
+      password: "password123",
+    })}>
+      Sign In
+    </button>
+  );
+}
+```
+
+### Environment Variables
+
+Copy `.env.example` to `.env.local`:
+
+```bash
+# Required
+DATABASE_URL="postgresql://lumea@localhost:5432/lumea"
+BETTER_AUTH_SECRET="generate-with-openssl-rand-base64-32"
+
+# Optional: OAuth providers
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
+```
 
 ---
 
