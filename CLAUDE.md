@@ -20,13 +20,19 @@ bun build        # Production build
 bun start        # Start production server
 bun lint         # Run ESLint
 
-# Database commands
+# Database commands (application tables)
 bun run db:generate  # Generate migrations from schema changes
 bun run db:migrate   # Apply pending migrations
 bun run db:push      # Push schema directly (dev only)
 bun run db:studio    # Launch Drizzle Studio (GUI)
 bun run db:seed      # Run seed script
-bun run db:setup     # Run migrations + seed (full setup)
+
+# Authentication commands (Better-Auth tables)
+bun run auth:generate  # View/generate Better-Auth schema
+bun run auth:migrate   # Apply Better-Auth migrations
+
+# Full setup (auth + app tables + seed)
+bun run db:setup     # Run auth:migrate + db:migrate + db:seed
 ```
 
 ## Architecture
@@ -95,14 +101,22 @@ This scaffold includes a full-stack database setup with PostgreSQL and authentic
 
 ### Database Schema
 
-Schema is defined in `lib/db/schema.ts`:
+**Two separate schemas:**
+
+1. **Better-Auth tables** (user, session, account, verification)
+   - Managed by Better-Auth CLI (`bun run auth:migrate`)
+   - Auto-generated based on auth config and plugins
+
+2. **Application tables** (your custom tables)
+   - Defined in `lib/db/schema.ts`
+   - Managed by Drizzle (`bun run db:migrate`)
 
 ```typescript
 import { db } from "@/lib/db";
-import { users, posts } from "@/lib/db/schema";
+import { posts } from "@/lib/db/schema";
 
-// Query all users
-const allUsers = await db.select().from(users);
+// Query posts (application table)
+const allPosts = await db.select().from(posts);
 
 // Insert a post
 const [post] = await db
@@ -136,6 +150,12 @@ bun run db:migrate
 ### Authentication (Better-Auth)
 
 Authentication is pre-configured with email/password support.
+Schema is managed via Better-Auth CLI (not manually in Drizzle schema).
+
+**Setup (first time or after adding plugins):**
+```bash
+bun run auth:migrate  # Creates/updates auth tables
+```
 
 **Server-side (API routes, Server Components):**
 ```typescript

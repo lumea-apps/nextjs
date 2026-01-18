@@ -4,6 +4,10 @@
  * Authentication setup using Better-Auth with Drizzle adapter.
  * Supports email/password and social OAuth providers.
  *
+ * Schema is managed by Better-Auth CLI:
+ *   bun run auth:generate  - Generate/view schema
+ *   bun run auth:migrate   - Apply migrations
+ *
  * @see SHO-176 - Full Stack Database Infrastructure
  * @see https://better-auth.com/docs/installation
  */
@@ -11,18 +15,11 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "@/lib/db";
-import * as schema from "@/lib/db/schema";
 
 export const auth = betterAuth({
-  // Database adapter using Drizzle
+  // Database adapter using Drizzle (schema managed by Better-Auth CLI)
   database: drizzleAdapter(db, {
     provider: "pg",
-    schema: {
-      user: schema.users,
-      session: schema.sessions,
-      account: schema.accounts,
-      verification: schema.verifications,
-    },
   }),
 
   // Email and password authentication
